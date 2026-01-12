@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <PID_v1.h>
+
 struct DCMotor {
   uint8_t in1;
   uint8_t in2;
@@ -14,14 +16,7 @@ struct UltrasonicSensor {
 DCMotor rightDriveMotor;
 DCMotor leftDriveMotor;
 
-void setup() {
-  rightDriveMotor = DCMotorInit(13, 12, 11, false);
-  leftDriveMotor = DCMotorInit(8, 7, 6, true);
-}
-
-void loop() {
-}
-
+UltrasonicSensor sensor;
 
 /**
  * Creates a DCMotor struct, initializes all pins. Using DCMotor and the other utility methods
@@ -43,8 +38,8 @@ DCMotor DCMotorInit(uint8_t in1, uint8_t in2, uint8_t power, boolean reversed){
   motor.power = power;
   motor.reversed = reversed;
   return motor;
-  
 }
+
 /**
  * Sets the power and direction of a DCMotor.
  * 
@@ -74,7 +69,7 @@ void setMotor(DCMotor motor, int power, boolean reverse){
 }
 
 /**
- * Creates an Ultrasonic Sensor struct. This isn't as helpful as the DCMotor, but still useful.
+ * Creates an Ultrasonic Sensor struct. This isn't as important as the DCMotor, but still useful.
  * @param trig The pin on the arduino connected to Trig.
  * @param echo The pin on the arduino connected to Echo.
  */
@@ -97,3 +92,15 @@ float getDistance(UltrasonicSensor sensor){
   return (pulseIn(sensor.echo, HIGH) * 0.0343) / 2;
 }
 
+void setup() {
+  // rightDriveMotor = DCMotorInit(13, 12, 11, false);
+  // leftDriveMotor = DCMotorInit(8, 7, 6, true);
+
+  sensor = UltrasonicSensorInit(10,9);
+  Serial.begin(9600);
+}
+
+void loop() {
+  delay(10);
+  Serial.println(getDistance(sensor));
+}
