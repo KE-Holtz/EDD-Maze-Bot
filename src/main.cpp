@@ -31,6 +31,10 @@ public:
     pinMode(in2, OUTPUT);
     pinMode(powerPin, OUTPUT);
   }
+
+  DCMotor(uint8_t in1, uint8_t in2, uint8_t powerPin){
+    DCMotor(in1, in2, powerPin, false);
+  }
   /**
    * Sets the power and direction of a DCMotor.
    *
@@ -93,10 +97,10 @@ public:
 };
 //========== End Library Code =============
 
-DCMotor rightDriveMotor(9,8,10,false);
-DCMotor leftDriveMotor(7, 6, 5, false);
+DCMotor rightDriveMotor(9,8,10);
+DCMotor leftDriveMotor(7, 6, 5);
 
-UltrasonicSensor sensor(10, 9);
+UltrasonicSensor sensor(12,11);
 
 double Kp = 1;
 double Ki = 0;
