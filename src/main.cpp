@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <PID_v1.h>
+#include <Servo.h>
 
 class DCMotor
 {
@@ -92,10 +93,10 @@ public:
 };
 //========== End Library Code =============
 
-DCMotor rightDriveMotor;
-DCMotor leftDriveMotor;
+DCMotor rightDriveMotor(9,8,10,false);
+DCMotor leftDriveMotor(7, 6, 5, false);
 
-UltrasonicSensor sensor;
+UltrasonicSensor sensor(10, 9);
 
 double Kp = 1;
 double Ki = 0;
@@ -107,11 +108,6 @@ PID pid(&input, &output, &setpoint, Kp, Ki, Kd, DIRECT);
 
 void setup()
 {
-  rightDriveMotor = DCMotor(13, 12, 11, false);
-  leftDriveMotor = DCMotor(8, 7, 6, true);
-
-  sensor = UltrasonicSensor(10, 9);
-
   pid.SetMode(AUTOMATIC);
   setpoint = 500;
 
