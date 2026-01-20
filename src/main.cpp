@@ -64,6 +64,10 @@ public:
 
     analogWrite(powerPin, power);
   }
+
+  void drive(int power){
+    drive(power, false);
+  }
 };
 
 class UltrasonicSensor
@@ -130,6 +134,6 @@ void loop()
   Serial.print("Out: ");
   Serial.println(output);
 
-  leftDriveMotor.drive(output, false);
-  rightDriveMotor.drive(output, false);
+  leftDriveMotor.drive(output);
+  rightDriveMotor.drive(output);
 }
