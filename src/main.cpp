@@ -33,7 +33,13 @@ public:
   }
 
   DCMotor(uint8_t in1, uint8_t in2, uint8_t powerPin){
-    DCMotor(in1, in2, powerPin, false);
+    this->in1 = in1;
+    this->in2 = in2;
+    this->powerPin = powerPin;
+    this->reversed = reversed;
+    pinMode(in1, OUTPUT);
+    pinMode(in2, OUTPUT);
+    pinMode(powerPin, OUTPUT);
   }
   /**
    * Sets the power and direction of a DCMotor.
@@ -60,6 +66,8 @@ public:
     {
       digitalWrite(in1, LOW);
       digitalWrite(in2, HIGH);
+    } else {
+      Serial.println("ts went south");
     }
 
     analogWrite(powerPin, power);
@@ -106,7 +114,7 @@ DCMotor leftDriveMotor(7, 6, 5);
 
 UltrasonicSensor sensor(12,11);
 
-double Kp = 1;
+double Kp = .5;
 double Ki = 0;
 double Kd = 0;
 
@@ -117,14 +125,14 @@ PID pid(&input, &output, &setpoint, Kp, Ki, Kd, DIRECT);
 void setup()
 {
   pid.SetMode(AUTOMATIC);
-  setpoint = 500;
+  setpoint = 100;
 
   Serial.begin(9600);
 }
 
 void loop()
 {
-  delay(1000);
+  delay(500);
   input = sensor.getDistance(); 
   pid.Compute();
   Serial.print("Sensor: ");
@@ -133,7 +141,9 @@ void loop()
   Serial.println(input);
   Serial.print("Out: ");
   Serial.println(output);
-
   leftDriveMotor.drive(output);
   rightDriveMotor.drive(output);
+
+  // leftDriveMotor.drive(255);
+  // rightDriveMotor.drive(255);
 }
