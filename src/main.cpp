@@ -1,140 +1,102 @@
 #include <math.h>
 #include <Arduino.h>
-#include <PID_v1.h>
 #include <Servo.h>
 #include <HoltzLib.h>
 
-#define RIGHT_ANGLE -90
-#define LEFT_ANGLE 90
-#define FRONT_ANGLE 0
+#define WHEEL_DIAMETER 6.3
+#define ROBOT_DIAMETER 15.0
+
+#define RIGHT_ANGLE 170
+#define LEFT_ANGLE 0
+#define FRONT_ANGLE 80
 
 // How long to wait for the servo to arrive at it's target
 #define SERVO_DELAY 500
 // Minum distance for a measurement to be considered open
 #define WALL_THRESHHOLD 10
 
-DCMotor rightDriveMotor(9, 8, 10);
-DCMotor leftDriveMotor(7, 6, 5);
+DCMotor rightDriveMotor(9, 10, 11);
+DCMotor leftDriveMotor(7, 8, 6);
 
-UltrasonicSensor sensor(12, 11);
-RotaryEncoder encoder(2);
+UltrasonicSensor sensor(13, 12);
+RotaryEncoder encoder(2, &rightDriveMotor);
 
 Servo servo;
 
-double Kp = 10;
-double Ki = 0;
-double Kd = 0;
-
-double input, output, setpoint;
-
-PID pid(&input, &output, &setpoint, Kp, Ki, Kd, DIRECT);
-
 enum State
 {
+  CHECK_FRONT,
   DRIVE_AHEAD,
-  CHECK_RIGHT,
-  CHECK_LEFT,
   TURN_RIGHT,
-  TURN_LEFT,
-  TURN_AROUND,
-  WAIT,
+  TURN_LEFT
 };
 
-State nextState = DRIVE_AHEAD;
-State state = WAIT;
-State previousState = WAIT;
+State nextState = CHECK_FRONT;
+State state;
 
 void setup()
 {
-  pid.SetMode(AUTOMATIC);
-  pid.SetOutputLimits(-255, 255);
   encoder.begin();
-
-  servo.attach(13);
-
-  setpoint = 10;
+  servo.attach(5);
 }
+
+int distanceToWall;
 
 void loop()
 {
-  previousState = state;
   state = nextState;
-
-  if (state == DRIVE_AHEAD)
-  {
-    input = sensor.getDistance();
-    pid.Compute();
-  }
 
   switch (state)
   {
-  case DRIVE_AHEAD:
-    if (absError() < 2)
-    {
-      stop();
-      nextState = CHECK_RIGHT;
-    }
-    else
-    {
-      driveToWall();
-    }
+    case CHECK_FRONT:
+      servo.write(FRONT_ANGLE);
+      delay(SERVO_DELAY);
+      distanceToWall = sensor.getDistance();
+      if (distanceToWall < WALL_THRESHHOLD){
+        nextState = TURN_LEFT;
+      }
+      else{
+        encoder.reset();
+        servo.write(RIGHT_ANGLE);
+        delay(SERVO_DELAY);
+        nextState = DRIVE_AHEAD;
+      }
     break;
 
-  case CHECK_RIGHT:
-    servo.write(RIGHT_ANGLE);
-    delay(SERVO_DELAY);
-    if (sensor.getDistance() > WALL_THRESHHOLD)
-    {
-      nextState = TURN_RIGHT;
-    }
-    else
-    {
-      nextState = CHECK_LEFT;
-    }
-    servo.write(FRONT_ANGLE);
-    delay(SERVO_DELAY);
+    case DRIVE_AHEAD:
+    rightDriveMotor.drive(255);
+    leftDriveMotor.drive(255);
+      if (sensor.getDistance() > WALL_THRESHHOLD)
+      {
+        nextState = TURN_RIGHT;
+      } else if (encoder.getDistanceTraveled(WHEEL_DIAMETER) >= distanceToWall - WALL_THRESHHOLD)
+      {
+        encoder.reset();
+        nextState = TURN_LEFT;
+      }
+    break; 
+    
+    case TURN_LEFT:
+      leftDriveMotor.drive(255);
+      rightDriveMotor.drive(255, true);
+      if (encoder.getRobotTurnDegrees(WHEEL_DIAMETER, ROBOT_DIAMETER) >= 90)
+      {
+        encoder.reset();
+        nextState = CHECK_FRONT;
+      }
     break;
 
-  case CHECK_LEFT:
-    servo.write(LEFT_ANGLE);
-    delay(SERVO_DELAY);
-    if (sensor.getDistance() > WALL_THRESHHOLD)
-    {
-      nextState = TURN_LEFT;
-    }
-    else
-    {
-      nextState = TURN_AROUND;
-    }
-    servo.write(FRONT_ANGLE);
-    delay(SERVO_DELAY);
-
-    break;
-  case TURN_RIGHT:
-    // TODO: Implement turning right
-    break;
-  case TURN_LEFT:
-    // TODO: Implement turning left
-    break;
-  case TURN_AROUND:
-    // TODO: Implement turning around
-    break;
-  case WAIT:
-    // This may do nothing
-    break;
+    case TURN_RIGHT:
+      leftDriveMotor.drive(255, true);
+      rightDriveMotor.drive(255);
+      if (encoder.getRobotTurnDegrees(WHEEL_DIAMETER, ROBOT_DIAMETER) >= 90)
+      {
+        encoder.reset();
+        nextState = CHECK_FRONT;
+      }
+    break; 
+      
   }
-}
-
-int absError()
-{
-  return abs(input - setpoint);
-}
-
-void driveToWall()
-{
-  // If output is negative, drive backwards
-  rightDriveMotor.drive(abs(output), output < 0);
-  leftDriveMotor.drive(abs(output), output < 0);
 }
 
 void stop()
