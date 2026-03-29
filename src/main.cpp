@@ -13,13 +13,13 @@
 // How long to wait for the servo to arrive at it's target
 #define SERVO_DELAY 500
 // Minum distance for a measurement to be considered open
-#define WALL_THRESHHOLD 10
+#define WALL_THRESHHOLD 15
 
-DCMotor rightDriveMotor(9, 10, 11);
-DCMotor leftDriveMotor(7, 8, 6);
+DCMotor leftDriveMotor(9, 10, 11);
+DCMotor rightDriveMotor(7, 8, 6);
 
 UltrasonicSensor sensor(13, 12);
-RotaryEncoder encoder(2, &rightDriveMotor);
+RotaryEncoder encoder(2, &leftDriveMotor);
 
 Servo servo;
 
@@ -32,27 +32,44 @@ enum State
 };
 
 State nextState = CHECK_FRONT;
-State state;
+State state = CHECK_FRONT;
 
 void setup()
 {
+  Serial.begin(9600);
   encoder.begin();
   servo.attach(5);
+
+  leftDriveMotor.stop();
+  rightDriveMotor.stop();
+  servo.write(FRONT_ANGLE);
 }
 
 int distanceToWall;
 
 void loop()
 {
+  // if (sensor.getDistance() > WALL_THRESHHOLD)
+  // {
+  //   leftDriveMotor.drive(255);
+  //   rightDriveMotor.drive(255);
+  //   delay(10);
+  // } else {
+  //   leftDriveMotor.drive(255);
+  //   rightDriveMotor.drive(255, true);
+  //   delay(10);
+  // }
+  
   state = nextState;
-
+  Serial.println(encoder.getRobotTurnDegrees(WHEEL_DIAMETER, ROBOT_DIAMETER));
   switch (state)
   {
     case CHECK_FRONT:
+      Serial.println("Checking front...");
       servo.write(FRONT_ANGLE);
       delay(SERVO_DELAY);
       distanceToWall = sensor.getDistance();
-      if (distanceToWall < WALL_THRESHHOLD){
+      if (distanceToWall <= WALL_THRESHHOLD){
         nextState = TURN_LEFT;
       }
       else{
@@ -64,8 +81,9 @@ void loop()
     break;
 
     case DRIVE_AHEAD:
-    rightDriveMotor.drive(255);
-    leftDriveMotor.drive(255);
+    Serial.println("Driving ahead...");
+    rightDriveMotor.drive(100);
+    leftDriveMotor.drive(100);
       if (sensor.getDistance() > WALL_THRESHHOLD)
       {
         nextState = TURN_RIGHT;
@@ -77,9 +95,10 @@ void loop()
     break; 
     
     case TURN_LEFT:
-      leftDriveMotor.drive(255);
-      rightDriveMotor.drive(255, true);
-      if (encoder.getRobotTurnDegrees(WHEEL_DIAMETER, ROBOT_DIAMETER) >= 90)
+    Serial.println("Turning left...");
+      leftDriveMotor.drive(100, true);
+      rightDriveMotor.drive(100, false);
+      if (encoder.getRobotTurnDegrees(WHEEL_DIAMETER, ROBOT_DIAMETER) <= -90)
       {
         encoder.reset();
         nextState = CHECK_FRONT;
@@ -87,8 +106,9 @@ void loop()
     break;
 
     case TURN_RIGHT:
-      leftDriveMotor.drive(255, true);
-      rightDriveMotor.drive(255);
+    Serial.println("Turning right...");
+      leftDriveMotor.drive(100, false);
+      rightDriveMotor.drive(100, true);
       if (encoder.getRobotTurnDegrees(WHEEL_DIAMETER, ROBOT_DIAMETER) >= 90)
       {
         encoder.reset();
